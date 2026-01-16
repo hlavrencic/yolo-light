@@ -1,29 +1,35 @@
-FROM python:3.9-slim
+# Build para desarrollo local (x86_64)
+# En RPi4, usar: arm64v8/python:3.11-slim-bullseye
+FROM python:3.11-slim-bullseye AS base
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Instalar dependencias necesarias mínimas
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Actualización de dependencias para Debian Trixie/Bookworm
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+# Copiar requirements y instalar con optimizaciones
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
-# CORRECCIÓN DE NUMPY (Para evitar el error de TFLite con NumPy 2.0)
-RUN pip install --no-cache-dir "numpy>=1.23.5,<2.0.0"
+# Copiar código fuente
+COPY src/ .
 
-# Instalación de librerías de Python
-RUN pip install --no-cache-dir \
-    tflite-runtime \
-    fastapi \
-    uvicorn \
-    Pillow \
-    python-multipart
+# Crear directorio para modelos (que puede ser un volumen)
+RUN mkdir -p /app/models
 
-COPY . .
+# Usuario no-root por seguridad
+RUN useradd -m -u 1000 yolo
+USER yolo
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8000/health')" || exit 1
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
