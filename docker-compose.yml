@@ -1,0 +1,75 @@
+version: '3.8'
+
+# Docker Compose para YOLO Light en CasaOS
+# Descarga automática de imagen arm64 desde Docker Hub
+# Puerto: 8000
+# Memoria: 1.5GB
+
+services:
+  yolo-light:
+    # Imagen precompilada desde GitHub Actions
+    image: hn8888/yolo-light:arm64
+    container_name: yolo-light-api
+    
+    # ==================== PUERTOS ====================
+    ports:
+      # Puerto host:puerto contenedor
+      - "8000:8000"
+    
+    # ==================== RECURSOS ====================
+    deploy:
+      resources:
+        limits:
+          # Máximo que puede usar
+          memory: 1.5G
+          cpus: '2'
+        reservations:
+          # Reservado (garantizado)
+          memory: 1G
+          cpus: '1'
+    
+    # ==================== VARIABLES DE ENTORNO ====================
+    environment:
+      # Umbral de confianza para detecciones (0-1)
+      - CONFIDENCE=0.4
+      # Puerto de la API
+      - PORT=8000
+      # Modo debug (opcional)
+      # - DEBUG=false
+    
+    # ==================== REINICIO ====================
+    restart: unless-stopped
+    
+    # ==================== HEALTH CHECK ====================
+    healthcheck:
+      # Comando para verificar salud
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      # Verificar cada 30 segundos
+      interval: 30s
+      # Timeout por verificación
+      timeout: 10s
+      # Reintentos antes de marcar unhealthy
+      retries: 3
+      # Tiempo de espera antes de verificar
+      start_period: 10s
+    
+    # ==================== LOGS ====================
+    logging:
+      driver: "json-file"
+      options:
+        # Tamaño máximo por archivo
+        max-size: "10m"
+        # Máximo de archivos rotados
+        max-file: "3"
+    
+    # ==================== RED ====================
+    # CasaOS maneja la red automáticamente
+    # Si necesitas red personalizada, descomenta:
+    # networks:
+    #   - yolo-network
+
+# ==================== RED PERSONALIZADA ====================
+# Descomenta si quieres controlar la red:
+# networks:
+#   yolo-network:
+#     driver: bridge

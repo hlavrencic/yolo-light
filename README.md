@@ -25,7 +25,24 @@ Detecta objetos en imágenes usando el modelo YOLO ultraligero (12MB Float16) co
 
 ## 🚀 Inicio Rápido
 
-### Opción 1: Desde Docker Hub (Recomendado)
+### Opción 1: CasaOS (Interfaz Gráfica)
+
+```bash
+# En tu RPi4 con CasaOS:
+# 1. Abre http://casaos.local:81
+# 2. App Management → Compose
+# 3. Importa el archivo docker-compose.yml
+# 4. Click Deploy
+
+# Espera 1-2 minutos
+
+# Verificar:
+curl http://casaos.local:8000/health
+```
+
+📖 Ver guía completa: [CASAOS_IMPORT.md](CASAOS_IMPORT.md)
+
+### Opción 2: Desde Docker Hub (Terminal)
 
 ```bash
 # RPi4 - Descargar imagen compilada
@@ -42,7 +59,7 @@ docker run -d \
 curl http://localhost:8000/health
 ```
 
-### Opción 2: Compilar Localmente
+### Opción 3: Compilar Localmente
 
 ```bash
 # Clonar repo
@@ -56,7 +73,7 @@ docker build -t yolo-light:latest .
 docker run -d -p 8000:8000 --memory=1.5G yolo-light:latest
 ```
 
-### Opción 3: GitHub Actions (Multi-arquitectura)
+### Opción 4: GitHub Actions (Multi-arquitectura)
 
 El proyecto compila automáticamente para **amd64, arm64, arm/v7** en cada push.
 
@@ -66,6 +83,7 @@ El proyecto compila automáticamente para **amd64, arm64, arm/v7** en cada push.
 
 | Archivo | Contenido |
 |---------|-----------|
+| [CASAOS_IMPORT.md](CASAOS_IMPORT.md) | 🏠 Importar en CasaOS (paso a paso) |
 | [DOCKER_HUB_INSTRUCTIONS.md](DOCKER_HUB_INSTRUCTIONS.md) | Cómo usar la imagen desde Docker Hub |
 | [GITHUB_ACTIONS_QUICK_SETUP.md](GITHUB_ACTIONS_QUICK_SETUP.md) | Setup GitHub Actions en 5 min |
 | [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) | Documentación completa de workflows |
