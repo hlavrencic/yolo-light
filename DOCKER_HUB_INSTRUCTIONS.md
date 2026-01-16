@@ -44,7 +44,10 @@ docker --version
 ### 3. Descargar la Imagen
 
 ```bash
-# Opción A: Desde Docker Hub (RECOMENDADO)
+# Opción A: Para RPi4 (ARM64) - RECOMENDADO
+docker pull hn8888/yolo-light:arm64
+
+# O la versión multi-arquitectura (detecta automáticamente)
 docker pull hn8888/yolo-light:latest
 
 # O versión específica
@@ -53,6 +56,8 @@ docker pull hn8888/yolo-light:v1.0
 # Verificar que está descargada
 docker images | grep yolo-light
 ```
+
+**Nota**: Las imágenes `arm64` y `rpi4` se generan automáticamente en GitHub Actions. Ver [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) para más detalles.
 
 ### 4. Ejecutar Contenedor
 
@@ -358,41 +363,46 @@ done
 
 ---
 
-## 🚀 Versión Mejorada con TFLite Real
+## 🚀 Compilación Automática con GitHub Actions
+
+La imagen ARM64 se compila automáticamente en GitHub Actions cuando haces push a GitHub:
+
+```bash
+# En tu PC/Mac
+git add .
+git commit -m "New version"
+git push origin main
+
+# → GitHub Actions compila automáticamente para ARM64, amd64, arm/v7
+# → En 15-20 minutos la imagen está en Docker Hub
+# → En RPi4 simplemente haces pull
+```
+
+Para más detalles, ver [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md).
+
+### Tags Generados Automáticamente
+
+- `hn8888/yolo-light:arm64` - ARM64 (RPi4)
+- `hn8888/yolo-light:latest` - Multi-arquitectura
+- `hn8888/yolo-light:v1.0` - Por cada versión/tag
+
+### Versión Mejorada con TFLite Real
 
 Si deseas usar el modelo TFLite real (en lugar de simulación):
 
-### 1. Instalar tflite-runtime
-
 ```bash
+# La imagen ya incluye soporte para tflite-runtime
+# En RPi4 con Debian/Ubuntu, simplemente instala:
 sudo apt-get install python3-tflite-runtime
-```
 
-### 2. Descargar Archivo Mejorado
-
-```bash
-# Crear directorio
-mkdir -p ~/yolo-light
-cd ~/yolo-light
-
-# Copiar archivo (desde tu PC)
-scp src/main_tflite_production.py pi@raspberry.local:~/yolo-light/
-
-# O descargarlo desde GitHub (si está disponible)
-wget https://raw.githubusercontent.com/tu-usuario/yolo-light/main/src/main_tflite_production.py
-```
-
-### 3. Reemplazar main.py
-
-```bash
-# Conectar a RPi4
-ssh pi@raspberry.local
-
-# Dentro del contenedor (si necesitas)
+# Luego reemplaza main.py con la versión de producción
 docker exec -it yolo-api bash
+cd /app
+wget https://raw.githubusercontent.com/hn8888/yolo-light/main/src/main_tflite_production.py -O main.py
+exit
 
-# O si construyes imagen local:
-# Reemplazar main.py antes de hacer docker build
+# Reinicia el contenedor
+docker restart yolo-api
 ```
 
 ---
