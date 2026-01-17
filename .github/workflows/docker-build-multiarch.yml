@@ -58,7 +58,13 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            org.opencontainers.image.title=Yolo-light
+            org.opencontainers.image.description=Lightweight computer vision model for real-time object detection.
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
+            org.opencontainers.image.source=${{ github.event.repository.html_url }}
+            org.opencontainers.image.vendor=PunteriaCero
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
