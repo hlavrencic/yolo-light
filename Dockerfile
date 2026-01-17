@@ -28,6 +28,11 @@ RUN pip install --no-cache-dir ultralytics
 RUN apt-get update && apt-get install -y --no-install-recommends libglib2.0-0 && \
     rm -rf /var/lib/apt/lists/*
 
+# Librerías adicionales para PyTorch/OpenCV/Pillow (compresión, imágenes, BLAS)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 libjpeg62-turbo libpng16-16 libopenblas0 zlib1g && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY src/main.py .
 
 EXPOSE 8000
