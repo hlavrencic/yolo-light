@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from ultralytics import YOLO
 import io
 import logging
@@ -261,8 +261,8 @@ async def detect_visual(file: UploadFile = File(...)):
         img_copy.save(img_bytes, format="PNG")
         img_bytes.seek(0)
         
-        return FileResponse(
-            io.BytesIO(img_bytes.getvalue()),
+        return StreamingResponse(
+            iter([img_bytes.getvalue()]),
             media_type="image/png",
             headers={"Content-Disposition": f"attachment; filename=detected_{file.filename}"}
         )
