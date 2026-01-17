@@ -1,6 +1,8 @@
 name: Build and Push Docker Image (Multi-Architecture)
 
 on:
+  workflow_dispatch:
+  
   push:
     branches:
       - main
