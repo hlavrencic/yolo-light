@@ -9,10 +9,11 @@ Detecta objetos en imágenes usando el modelo YOLO ultraligero (12MB Float16) co
 - ✅ **Ultraligero**: Modelo YOLO parametrizable (default: YOLOv5n)
 - ✅ **Multiperfil**: Detecta 80 clases COCO (personas, objetos, animales, etc.)
 - ✅ **Multi-arquitectura**: amd64, arm64 con GitHub Actions
-- ✅ **API REST**: 3 endpoints + health check dinámico
+- ✅ **API REST**: 4 endpoints + health check dinámico
 - ✅ **Docker-native**: Compilación automática y distribución en Docker Hub
 - ✅ **Flexible**: Selecciona modelo mediante variable de entorno MODEL_NAME
 - ✅ **Eficiente**: ~800MB-1.2GB en runtime en RPi4
+- ✅ **Visual Output**: Endpoint para retornar imágenes con bounding boxes
 
 ## 📋 Requisitos
 
@@ -89,15 +90,16 @@ El proyecto compila automáticamente para **amd64, arm64, arm/v7** en cada push.
 
 ## 📚 Documentación
 
-| Archivo | Contenido |
+| Sección | Contenido |
 |---------|-----------|
-| [CASAOS_IMPORT.md](CASAOS_IMPORT.md) | 🏠 Importar en CasaOS (paso a paso) |
-| [DOCKER_HUB_INSTRUCTIONS.md](DOCKER_HUB_INSTRUCTIONS.md) | Cómo usar la imagen desde Docker Hub |
-| [GITHUB_ACTIONS_QUICK_SETUP.md](GITHUB_ACTIONS_QUICK_SETUP.md) | Setup GitHub Actions en 5 min |
-| [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) | Documentación completa de workflows |
-| [QUICK_START_GITHUB_ACTIONS.md](QUICK_START_GITHUB_ACTIONS.md) | Ejemplos prácticos y casos de uso |
-| [DEPLOYMENT_RPI4.md](DEPLOYMENT_RPI4.md) | Deploy en Raspberry Pi 4 |
-| [DEVELOPMENT_STATUS.md](DEVELOPMENT_STATUS.md) | Estado del desarrollo |
+| **[📖 Docs Principal](docs/)** | Índice de toda la documentación |
+| **[🚀 Guía de Instalación](docs/guides/INSTALLATION.md)** | Instalación en RPi4, PC, Docker Compose |
+| **[📸 Ejemplos de Uso](docs/EXAMPLES.md)** | Casos prácticos con imágenes de resultado |
+| **[📚 API Reference](docs/guides/API_REFERENCE.md)** | Documentación técnica completa de endpoints |
+| **[🏠 CasaOS Import](CASAOS_IMPORT.md)** | Instalación con interfaz gráfica |
+| **[🐳 Docker Hub](DOCKER_HUB_INSTRUCTIONS.md)** | Usar imagen desde Docker Hub |
+| **[⚙️ GitHub Actions](GITHUB_ACTIONS_SETUP.md)** | Setup CI/CD para compilar imágenes |
+| **[🚀 RPi4 Deployment](DEPLOYMENT_RPI4.md)** | Deploy en Raspberry Pi 4 |
 
 ## 🔍 API Endpoints
 
