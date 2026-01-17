@@ -4,13 +4,17 @@ on:
   push:
     branches:
       - main
-      - master
     tags:
       - 'v*'
+    paths:
+      - 'Dockerfile'
+      - 'src/**'
   pull_request:
     branches:
       - main
-      - master
+    paths:
+      - 'Dockerfile'
+      - 'src/**'
 
 env:
   REGISTRY: docker.io
