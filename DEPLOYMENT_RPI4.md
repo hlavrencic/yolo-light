@@ -132,8 +132,11 @@ curl http://localhost:8000/health | python3 -m json.tool
 # Ver modelo actual
 curl http://localhost:8000/health | jq '.model'
 
-# Test inferencia
+# Test inferencia (JSON)
 curl -X POST -F "file=@foto.jpg" http://localhost:8000/detect | python3 -m json.tool
+
+# Test inferencia visual (imagen con detecciones) ✨ NUEVO
+curl -X POST -F "file=@foto.jpg" http://localhost:8000/detect-visual -o foto_detectada.png
 
 # Monitorear tiempo de inferencia
 watch -n 1 'curl -s -X POST -F "file=@foto.jpg" http://localhost:8000/detect | grep inference_time'

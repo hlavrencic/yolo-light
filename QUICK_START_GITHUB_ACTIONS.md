@@ -138,7 +138,7 @@ En GitHub:
 
 Después de push a `main`:
 ```
-hn8888/yolo-light:latest     ← Recomendado
+hn8888/yolo-light:latest     ← Recomendado (con endpoint /detect-visual)
 hn8888/yolo-light:arm64      ← RPi4 específicamente
 hn8888/yolo-light:amd64      ← Desarrollo
 ```

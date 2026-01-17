@@ -101,13 +101,24 @@ El proyecto compila automáticamente para **amd64, arm64, arm/v7** en cada push.
 
 ## 🔍 API Endpoints
 
-### Health Check
+### 1. Health Check
 ```bash
 curl http://localhost:8000/health
-# Response: { "status": "healthy", "model": "YOLO11n" }
 ```
 
-### Detectar Objetos
+**Response:**
+```json
+{
+  "status": "healthy",
+  "model": "yolov5n.pt",
+  "model_status": "loaded",
+  "model_ready": true,
+  "version": "1.0.0",
+  "classes": 80
+}
+```
+
+### 2. Detectar Objetos (JSON)
 ```bash
 curl -X POST -F "file=@imagen.jpg" http://localhost:8000/detect
 ```
@@ -116,20 +127,65 @@ curl -X POST -F "file=@imagen.jpg" http://localhost:8000/detect
 ```json
 {
   "success": true,
-  "count": 3,
-  "inference_time_ms": 245.5,
+  "count": 2,
+  "inference_time_ms": 1677.5,
+  "total_time_ms": 1723.6,
+  "model": "yolov5n.pt",
+  "image_size": [1920, 1255],
   "objects": [
     {
-      "class": "person",
-      "confidence": 0.892,
-      "bbox": { "x1": 100.5, "y1": 50.2, "x2": 300.1, "y2": 450.8 }
+      "class": "chair",
+      "confidence": 0.907,
+      "bbox": {"x1": 606, "y1": 691, "x2": 896, "y2": 1115}
     }
   ]
 }
 ```
 
-### Info de la API
-### Variables de Entorno
+### 3. Detectar Objetos (Imagen Visual) ✨ **NUEVO**
+```bash
+curl -X POST -F "file=@imagen.jpg" http://localhost:8000/detect-visual -o imagen_detectada.png
+```
+
+**Response:** Descarga de imagen PNG con bounding boxes dibujados
+
+**Características:**
+- 🟩 Rectángulos alrededor de cada objeto detectado
+- 📝 Etiquetas con clase + confianza
+- 🎨 Colores diferentes para cada objeto
+- ⚡ Mismos resultados que `/detect` pero en formato visual
+
+**Ejemplo de uso en RPi4:**
+```bash
+# Descargar imagen con detecciones
+curl -X POST -F "file=@habitacion.jpg" \
+  http://192.168.0.251:8003/detect-visual \
+  -o habitacion_con_detecciones.png
+```
+
+### 4. Información de la API
+```bash
+curl http://localhost:8000/
+```
+
+**Response:**
+```json
+{
+  "name": "YOLO Light API",
+  "version": "1.0.0",
+  "description": "Lightweight YOLO object detection API for RPi4",
+  "model": "yolov5n.pt",
+  "model_classes": 80,
+  "endpoints": {
+    "POST /detect": "Detectar objetos en imagen → JSON",
+    "POST /detect-visual": "Detectar objetos en imagen → Imagen con bounding boxes",
+    "GET /health": "Verificar estado de API",
+    "GET /": "Información de API"
+  }
+}
+```
+
+## ⚙️ Configuración
 
 | Variable | Default | Descripción |
 |----------|---------|-------------|
