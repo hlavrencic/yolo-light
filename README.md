@@ -343,7 +343,16 @@ yolo-light/
 
 ## 📝 Licencia
 
-MIT
+**Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**
+
+Este proyecto es de **uso no comercial**. Puedes:
+- ✅ Usar con fines educativos y de investigación
+- ✅ Usar en organizaciones sin fines de lucro
+- ✅ Crear derivados (forks, modificaciones)
+- ❌ Usar con fines comerciales
+- ❌ Vender o monetizar
+
+Ver [LICENSE](LICENSE) para detalles completos.
 
 ---
 
