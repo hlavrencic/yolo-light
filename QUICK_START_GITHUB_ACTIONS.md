@@ -68,7 +68,27 @@ Los archivos ya están en `.github/workflows/`:
 
 ## 📝 Usos Diarios
 
-### Uso 1: Cambio Simple
+### Uso 1: Cambio en el Modelo
+
+```bash
+# Cambiar el modelo seleccionado
+vi Dockerfile  # O usar sed para cambiar MODEL_NAME
+
+# Edita (si necesario)
+vi src/main.py
+
+# Commit y push
+git add Dockerfile src/main.py
+git commit -m "Change default model to yolov5m.pt"
+git push origin main
+
+# → GitHub Actions compila automáticamente
+# → En RPi4: docker pull hn8888/yolo-light:arm64
+```
+
+**Nota**: Los usuarios pueden cambiar el modelo sin recompilar usando `-e MODEL_NAME=...`
+
+### Uso 2: Cambio Simple en la Lógica
 
 ```bash
 # Edita
@@ -76,7 +96,7 @@ vi src/main.py
 
 # Commit y push
 git add src/main.py
-git commit -m "Fix bug"
+git commit -m "Fix bug in confidence filtering"
 git push origin main
 
 # → GitHub Actions compila automáticamente
@@ -95,13 +115,22 @@ git push origin v1.1.0
 # → En RPi4: docker pull hn8888/yolo-light:v1.1.0
 ```
 
-### Uso 3: Build Manual (GUI)
+### Uso 3: Permitir que Usuarios Cambien Modelo
+
+Los usuarios pueden cambiar el modelo sin recompilar:
+
+```bash
+# En RPi4
+docker run -e MODEL_NAME=yolov5m.pt -d -p 8000:8000 hn8888/yolo-light:arm64
+```
+
+### Uso 4: Build Manual (GUI)
 
 En GitHub:
 1. Actions tab
-2. Selecciona "Docker Build (ARM64 Only)"
+2. Selecciona "Docker Build (Multi-arch)"
 3. Click "Run workflow"
-4. Espera ~15 minutos
+4. Espera ~20 minutos
 
 ---
 

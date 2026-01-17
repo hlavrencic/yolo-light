@@ -1,113 +1,115 @@
-# YOLO Light - Guía de Migración a Raspberry Pi 4
+# YOLO Light - Guía de Deployment en Raspberry Pi 4
 
-## Estado Actual (Desarrollo)
+## Estado Actual (Producción)
 
-✅ **API funcionando** con modo TFLite simulado  
-✅ **Docker buildable** para x86_64  
+✅ **API funcionando** con modelos YOLO reales (YOLOv5, YOLOv8, YOLOv11)  
+✅ **Docker precompilado** para amd64 y arm64  
 ✅ **Endpoints validados** (/health, /, /detect)  
 ✅ **Respuestas JSON** con formato correcto  
+✅ **Modelos parametrizables** vía variable de entorno MODEL_NAME  
 
 ## Pasos para RPi4 Producción
 
-### 1. Preparar el Modelo TFLite en RPi4
+### 1. Descargar imagen Docker (Recomendado)
 
 ```bash
-# Opción A: Descargarlo en RPi4
-scp yolo11n_float16.tflite pi@raspberry.local:/home/pi/yolo-light/
-
-# Opción B: Pre-incluirlo en Docker (si tienes el archivo)
-# Coloca yolo11n_float16.tflite en src/ antes de construir
-cp yolo11n_float16.tflite src/
-git add src/yolo11n_float16.tflite
-```
-
-### 2. Instalar tflite-runtime en RPi4
-
-#### Opción A: Paquete APT (RECOMENDADO)
-
-```bash
-# En RPi4 con Raspberry Pi OS
+# En RPi4
 ssh pi@raspberry.local
 
-# Instalar desde repositorio oficial
-sudo apt-get update
-sudo apt-get install -y python3-tflite-runtime
+# Descargar imagen precompilada desde Docker Hub
+docker pull hn8888/yolo-light:arm64
 
-# Verificar instalación
-python3 -c "import tflite_runtime.interpreter; print('✓ TFLite ready')"
+# Ejecutar con modelo por defecto (YOLOv5n)
+docker run -d \
+  -p 8000:8000 \
+  --memory=1.5G \
+  --name yolo-api \
+  hn8888/yolo-light:arm64
+
+# Verificar
+curl http://localhost:8000/health
 ```
 
-#### Opción B: Compilar desde fuente
+### 2. Cambiar modelo de detección
+
+El modelo se puede cambiar sin recompilar usando la variable de entorno `MODEL_NAME`:
 
 ```bash
-# En RPi4 (toma 30-45 minutos)
-git clone https://github.com/tensorflow/tensorflow.git
-cd tensorflow
-./tensorflow/lite/tools/pip_package/build_pip_package_with_cmake.sh
+# Para YOLOv5m (más preciso, ~400-600ms latencia)
+docker stop yolo-api
+docker rm yolo-api
 
-pip install /tmp/tensorflow_lite_*.whl
+docker run -d \
+  -e MODEL_NAME=yolov5m.pt \
+  -p 8000:8000 \
+  --memory=2G \
+  --name yolo-api \
+  hn8888/yolo-light:arm64
+
+# El modelo se descargará automáticamente en el primer inicio
+curl http://localhost:8000/health | jq '.model'
+# Output: "yolov5m.pt"
 ```
 
-#### Opción C: Usar pip (Python 3.9 solamente)
+### 3. Modelos Disponibles
 
+**YOLOv5** (Ultraligero - Recomendado para RPi4):
 ```bash
-# Solo funciona en Python 3.9
-python3.9 -m pip install tflite-runtime
-
-# Si tienes Python 3.11, instala primero 3.9
-sudo apt-get install python3.9 python3.9-venv
+docker run -e MODEL_NAME=yolov5n.pt ... # 7.5MB (200-300ms)
+docker run -e MODEL_NAME=yolov5s.pt ... # 21MB (250-350ms)
+docker run -e MODEL_NAME=yolov5m.pt ... # 47MB (400-600ms)
 ```
 
-### 3. Actualizar main.py
-
-**Opción A: Usar main_tflite_production.py** (RECOMENDADO)
-
+**YOLOv8** (Más moderno):
 ```bash
-# Reemplazar con la versión de producción
-cp src/main.py src/main_demo.py
-cp src/main_tflite_production.py src/main.py
+docker run -e MODEL_NAME=yolov8n.pt ... # Nano
+docker run -e MODEL_NAME=yolov8s.pt ... # Small
+docker run -e MODEL_NAME=yolov8m.pt ... # Medium
 ```
 
-**Opción B: Editar manualmente**
-
-En `src/main.py`, reemplaza la función `simulate_tflite_detections()` con la implementación real de `main_tflite_production.py`:
-- Importar `tflite_runtime.interpreter`
-- Cargar modelo en `startup()`
-- Ejecutar `run_tflite_inference()` en lugar de `simulate_tflite_detections()`
-
-### 4. Ajustar requirements.txt para RPi4
-
-```txt
-fastapi==0.104.1
-uvicorn==0.24.0
-pillow==10.1.0
-numpy==1.24.3
-python-multipart==0.0.6
-# tflite-runtime==2.14.0  # Instalar vía APT en RPi4, NO por pip
-```
-
-### 5. Construir imagen Docker ARM64
-
+**YOLOv11** (Última versión):
 ```bash
-# EN RPi4 (construcción nativa - más rápida)
-cd ~/yolo-light
-docker build -t yolo-light:arm64 .
-
-# DESDE otra máquina con Docker BuildX (cross-compile)
-docker buildx create --name mybuilder
-docker buildx use mybuilder
-docker buildx build --platform linux/arm64 -t yolo-light:arm64 .
+docker run -e MODEL_NAME=yolov11n.pt ... # Nano
+docker run -e MODEL_NAME=yolov11s.pt ... # Small
 ```
 
-### 6. Ejecutar con límites de memoria
+### 4. Configuración con docker-compose
+
+Crea un archivo `docker-compose.yml` en RPi4:
+
+```yaml
+version: '3.8'
+services:
+  yolo-api:
+    image: hn8888/yolo-light:arm64
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_NAME=yolov5n.pt  # Cambiar aquí para usar otro modelo
+    mem_limit: 1.5g
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+```
+
+Ejecutar:
+```bash
+docker-compose up -d
+```
+
+### 5. Compilación Nativa en RPi4 (Opcional)
+
+Si necesitas compilar localmente en RPi4:
 
 ```bash
 # Parar contenedor anterior
 docker stop yolo-api
-docker rm yolo-api
-
-# Ejecutar con memoria limitada
+docker rm yolo-api (YOLOv5n)
 docker run -d \
+  -e MODEL_NAME=yolov5n.pt \
   -p 8000:8000 \
   --memory=1.5G \
   --cpus="3" \
@@ -121,41 +123,41 @@ docker logs -f yolo-api
 docker stats yolo-api
 ```
 
-### 7. Verificar inferencia real
+### 7. Verificar modelo cargado
 
 ```bash
 # Test health check
 curl http://localhost:8000/health | python3 -m json.tool
 
-# Test inferencia (compara con modo demo)
+# Ver modelo actual
+curl http://localhost:8000/health | jq '.model'
+
+# Test inferencia
 curl -X POST -F "file=@foto.jpg" http://localhost:8000/detect | python3 -m json.tool
 
 # Monitorear tiempo de inferencia
 watch -n 1 'curl -s -X POST -F "file=@foto.jpg" http://localhost:8000/detect | grep inference_time'
 ```
 
-## Comparación: Demo vs Producción
+## Comparación: YOLOv5n vs YOLOv5m en RPi4
 
-| Métrica | Demo (Simulado) | Producción (TFLite) |
-|---------|-----------------|-------------------|
-| Tiempo inferencia | ~180-350ms | ~200-400ms |
-| CPU | Bajo | Alto (4 threads) |
-| RAM | ~300MB | ~800-1200MB |
-| Precisión | Falso (simulado) | Real (YOLO11n) |
-| Modo activación | Siempre | Con tflite-runtime |
-
-## Troubleshooting
-
-### Error: "No module named 'tflite_runtime'"
+| Métrica | YOLOv5n | YOLOv5m |
+|---------|---------|---------|
+| Tamaño modelo | 7.5MB | 47MB |
+| Tiempo inferencia | 200-300ms | 400-600ms |
+| Memoria runtime | ~800MB | ~1.2GB |
+| CPU | ~80% de 1 core | ~95% de 1 core |
+| Precisión COCO | 37.4 mAP | 45.4 mAP |
+| **Recomendación** | ✅ RPi4 | Requiere RPi4 4GB
+| Precisión | Falso (simulado)orch'"
 
 ```bash
-# Verificar instalación
-python3 -c "import tflite_runtime; print(tflite_runtime.__version__)"
+# Se instalará automáticamente en la imagen Docker
+# Si compilas localmente, instala PyTorch:
+pip install torch torchvision
 
-# Si falla, reinstalar
-sudo apt-get install --reinstall python3-tflite-runtime
-
-# O compilar desde fuente (ver arriba)
+# O si necesitas versión CPU para RPi4:
+pip install torch -f https://download.pytorch.org/whl/torch_stable.html
 ```
 
 ### Error: "Out of memory"
@@ -175,7 +177,7 @@ sudo dphys-swapfile swapon
 ### Error: "Cannot open shared object file"
 
 ```bash
-# Instalar librerías de sistema faltantes
+# Instalar librerías de sistema (se incluyen en Dockerfile)
 sudo apt-get install -y \
   libopenblas-dev \
   libjasper-dev \
@@ -189,38 +191,72 @@ sudo apt-get install -y \
 ### Inferencia muy lenta (>1s)
 
 ```bash
-# Ajustar threads (por defecto 4 en RPi4)
-# En main_tflite_production.py, línea ~80:
-interpreter = tflite.Interpreter(
-    model_path=model_path,
-    num_threads=2  # Reducir de 4 a 2 para mejor latencia
-)
+# Usar modelo más pequeño
+docker stop yolo-api
+docker run -e MODEL_NAME=yolov5n.pt ... # Cambiar a nano
 
-# También reducir imagen de entrada si no necesitas precisión máxima
-# En parse_yolo_output: aumentar conf_threshold de 0.4 a 0.5
+# O reducir calidad de imagen en producción
+# (ajustar en src/main.py si compilas localmente)
 ```
 
-## Monitoreo en Producción
+### Cambiar modelo rápidamente
 
 ```bash
-# Script para monitoring continuo
-while true; do
-  echo "=== $(date) ==="
-  docker stats yolo-api --no-stream
-  curl -s http://localhost:8000/health | python3 -m json.tool | grep -E "status|inference"
+# Sin recompilar, solo cambiar variable de entorno
+docker stop yolo-api
+docker rm yolo-api
+
+docker run -d \
+  -e MODEL_NAME=yolov8n.pt \  # Cambiar aquí
+  -p 8000:8000 \
+  --memory=1.5G \
+  --name yolo-api \model|inference"
   sleep 10
 done
 ```
 
-## Métricas Esperadas en RPi4
+## Métricas Esperadas en RPi4 (YOLOv5n)
 
-- **Memoria**: 800-1200 MB en tiempo de ejecución
-- **CPU**: ~80-95% de un core durante inferencia
-- **Latencia**: 200-400ms por imagen (CPU-only)
-- **Throughput**: 2-5 imágenes/segundo
+- **Memoria**: 800-1000 MB en tiempo de ejecución
+- **CPU**: ~80% de un core durante inferencia
+- **Latencia**: 200-300ms por imagen (CPU-only)
+- **Throughput**: 3-4 imágenes/segundo
 - **Uptime**: Días sin reinicio si memoria se monitorea
+- **Modelo**: yolov5n.pt (7.5MB)
 
-## Backup: Volver a Demo
+## Cambio Rápido entre Modelos
+
+Sin necesidad de recompilar:
+
+```bash
+# YOLOv5n (ultra ligero - RECOMENDADO)
+docker run -e MODEL_NAME=yolov5n.pt ...
+
+# YOLOv5s (pequeño - mejor precisión)
+docker run -e MODEL_NAME=yolov5s.pt ...
+
+# YOLOv8n (más moderno)
+docker run -e MODEL_NAME=yolov8n.pt ...
+
+# YOLOv11n (última versión)
+docker run -e MODEL_NAME=yolov11n.pt ...
+```
+
+## Backup: Volver a Modelo Anterior
+
+Si necesitas revertir a modelo anterior:
+Usar imagen precompilada desde Docker Hub
+2. ✅ Validar health check
+3. ✅ Hacer primer test de inferencia
+4. ✅ Cambiar modelo si es necesario
+5. ✅ Monitorear métricas en producción
+6. ✅ Ajustar parámetros según carga
+
+---
+
+**Nota**: Con imagen precompilada, el setup completo toma ~5 minutos (descarga + startup). No necesitas compilar nada en RPi4.
+
+**Para cambiar modelos**: Solo necesitas reiniciar el contenedor con diferente `MODEL_NAME`. No se necesita recompilación
 
 Si tflite-runtime da problemas:
 

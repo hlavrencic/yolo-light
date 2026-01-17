@@ -6,11 +6,12 @@ Detecta objetos en imágenes usando el modelo YOLO ultraligero (12MB Float16) co
 
 ## ✨ Características
 
-- ✅ **Ultraligero**: Modelo YOLO11n Float16 (12MB)
+- ✅ **Ultraligero**: Modelo YOLO parametrizable (default: YOLOv5n)
 - ✅ **Multiperfil**: Detecta 80 clases COCO (personas, objetos, animales, etc.)
-- ✅ **Multi-arquitectura**: amd64, arm64, arm/v7 con GitHub Actions
-- ✅ **API REST**: 3 endpoints + health check
+- ✅ **Multi-arquitectura**: amd64, arm64 con GitHub Actions
+- ✅ **API REST**: 3 endpoints + health check dinámico
 - ✅ **Docker-native**: Compilación automática y distribución en Docker Hub
+- ✅ **Flexible**: Selecciona modelo mediante variable de entorno MODEL_NAME
 - ✅ **Eficiente**: ~800MB-1.2GB en runtime en RPi4
 
 ## 📋 Requisitos
@@ -48,10 +49,17 @@ curl http://casaos.local:8000/health
 # RPi4 - Descargar imagen compilada
 docker pull hn8888/yolo-light:arm64
 
-# Ejecutar
+# Ejecutar con modelo por defecto (YOLOv5n)
 docker run -d \
   -p 8000:8000 \
   --name yolo-api \
+  --memory=1.5G \
+  hn8888/yolo-light:arm64
+
+# Ejecutar con modelo personalizado
+docker run -d \
+  -e MODEL_NAME=yolov5m.pt \
+  -p 8000:8000 \
   --memory=1.5G \
   hn8888/yolo-light:arm64
 
@@ -121,11 +129,55 @@ curl -X POST -F "file=@imagen.jpg" http://localhost:8000/detect
 ```
 
 ### Info de la API
+### Variables de Entorno
+
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `MODEL_NAME` | `yolov5n.pt` | Modelo YOLO a cargar (cualquier modelo de Ultralytics) |
+| `PORT` | 8000 | Puerto de la API |
+
+### Modelos Soportados
+
+Puedes usar cualquier modelo de la librería Ultralytics:
+
+**YOLOv5** (Recomendado para RPi4):
 ```bash
-curl http://localhost:8000/
-# Response: { "name": "YOLO Light API", "version": "1.0" }
+# Ultraligero (7.5MB)
+MODEL_NAME=yolov5n.pt
+
+# Pequeño (21MB)
+MODEL_NAME=yolov5s.pt
+
+# Mediano (47MB)
+MODEL_NAME=yolov5m.pt
 ```
 
+**YOLOv8**:
+```bash
+MODEL_NAME=yolov8n.pt      # Nano
+MODEL_NAME=yolov8s.pt      # Small
+MODEL_NAME=yolov8m.pt      # Medium
+```
+
+**YOLOv11**:
+```bash
+MODEL_NAME=yolov11n.pt     # Nano
+MODEL_NAME=yolov11s.pt     # Small
+MODEL_NAME=yolov11m.pt     # Medium
+```
+
+### Ejemplos de Uso
+
+```bash
+# Ejecutar con YOLOv5m (mayor precisión, más lento)
+docker run -e MODEL_NAME=yolov5m.pt -d -p 8000:8000 hn8888/yolo-light:arm64
+
+# Ejecutar con YOLOv8n (versión más nueva)
+docker run -e MODEL_NAME=yolov8n.pt -d -p 8000:8000 hn8888/yolo-light:arm64
+
+# Verificar modelo cargado
+curl http://localhost:8000/health
+```
 ## ⚙️ Configuración
 
 | Variable | Default | Descripción |
@@ -137,14 +189,16 @@ curl http://localhost:8000/
 ```bash
 # Compilación nativa más lenta pero compatible
 docker build -t yolo-light:latest .
-# El build toma ~5-10 min pero genera imagen optimizada para ARM64
-```
+# El build tYOLOv5n | YOLOv5m |
+|---------|---------|---------|
+| Inference time (RPi4) | 200-300ms | 400-600ms |
+| Tamaño modelo | 7.5MB | 47MB |
+| Memory footprint | ~800MB | ~1.2GB |
+| Throughput | ~3-4 req/seg | ~1-2 req/seg |
+| Clases COCO | 80 | 80 |
+| Tamaño imagen Docker | 1.5-2GB | 1.5-2GB |
 
-### Opción 3: Cross-compile desde otra máquina
-
-```bash
-# Desde PC/Mac con Docker BuildX
-docker buildx build --platform linux/arm64 \
+**Recomendación para RPi4**: YOLOv5n (balance velocidad/precisión)ux/arm64 \
   -t yolo-light:arm64 \
   --push \
   .
@@ -197,10 +251,48 @@ Imagen precompilada disponible:
 docker pull hn8888/yolo-light:arm64        # Para RPi4
 docker pull hn8888/yolo-light:amd64        # Para PC/Mac
 docker pull hn8888/yolo-light:latest       # Multi-arch
+```**.
+
+## 📝 Ejemplos de Deployment
+
+### Cambiar modelo sin recompilar
+
+```bash
+# Cambiar a YOLOv5m (más preciso, más lento)
+docker stop yolo-api
+docker rm yolo-api
+
+docker run -d \
+  -e MODEL_NAME=yolov5m.pt \
+  -p 8000:8000 \
+  --memory=2G \
+  --name yolo-api \
+  hn8888/yolo-light:arm64
+
+# El modelo se descargará automáticamente en el primer inicio
 ```
 
-Compilada automáticamente via GitHub Actions para **amd64, arm64, arm/v7**.
-
+### Verificar el modelo actual
+multi-arquitectura
+├── requirements.txt                    # Dependencias Python (referencia)
+├── src/
+│   ├── main.py                        # API FastAPI + parametrización
+│   └── yolo11n_float16.tflite         # Archivo de referencia
+├── testing/                            # Imágenes de prueba
+├── .github/workflows/                  # GitHub Actions CI/CD
+│   └── docker-build-multiarch.yml     # Build amd64, arm64 (arm/v7 removido)
+  yolo-api:
+    image: hn8888/yolo-light:arm64
+    ports:
+      - "8000:8000"
+    environms YOLO parametrizables** (YOLOv5, YOLOv8, YOLOv11)
+- ✅ **Detecta 80 clases COCO**
+- ✅ **Multi-arquitectura**: amd64, arm64
+- ✅ **GitHub Actions CI/CD** automático
+- ✅ **Docker Hub** precompilado
+- ✅ **Testing completo** (6 tests pasando)
+- ✅ **Documentación completa**
+- ✅ **Selección de modelo sin recompilación
 ## 🔧 Troubleshooting
 
 ### "Out of memory" en RPi4
