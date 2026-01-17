@@ -1,8 +1,4 @@
-# ⚠️ Archivo Movido
-
-Este archivo ha sido movido a la documentación centralizada.
-
-👉 **Ver en:** [docs/guides/CASAOS.md](docs/guides/CASAOS.md)
+# 🏠 YOLO Light en CasaOS
 
 Guía completa para importar y ejecutar YOLO Light API en CasaOS (Raspberry Pi 4).
 

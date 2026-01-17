@@ -4,32 +4,16 @@ Bienvenido a la documentación completa de YOLO Light API.
 
 ---
 
-## 🚀 Inicio Rápido
+## � Guías Disponibles
 
-¿Eres nuevo? Empieza aquí:
-
-1. **[Guía de Instalación](guides/INSTALLATION.md)** - Instala en RPi4, PC o servidor
-2. **[Ejemplos de Uso](EXAMPLES.md)** - Prueba endpoints con ejemplos visuales
-3. **[API Reference](guides/API_REFERENCE.md)** - Documentación técnica completa
-
----
-
-## 📚 Documentación Principal
-
-### 🔧 Instalación y Setup
-- [Guía de Instalación Completa](guides/INSTALLATION.md) - Docker, Docker Compose, CasaOS
-- [Instalación en RPi4](../DEPLOYMENT_RPI4.md) - Específico para Raspberry Pi 4
-- [Setup GitHub Actions](../GITHUB_ACTIONS_SETUP.md) - CI/CD para compilar imágenes
-
-### 💻 Uso de la API
-- [Ejemplos Prácticos](EXAMPLES.md) - Casos de uso reales con imágenes
-- [API Reference Completa](guides/API_REFERENCE.md) - Todos los endpoints
-- [Configuración de Modelos](guides/API_REFERENCE.md#-modelos-disponibles) - Cambiar modelos YOLO
-
-### 🏠 Integraciones
-- [CasaOS Import](../CASAOS_IMPORT.md) - Instalar con interfaz gráfica
-- [Docker Hub Instructions](../DOCKER_HUB_INSTRUCTIONS.md) - Usar imagen desde Docker Hub
-- [Quick Start GitHub Actions](../QUICK_START_GITHUB_ACTIONS.md) - CI/CD rápido
+| Sección | Descripción |
+|---------|-------------|
+| **[🚀 Instalación](guides/INSTALLATION.md)** | Paso a paso: Docker, Docker Compose, RPi4 |
+| **[📸 Ejemplos Prácticos](EXAMPLES.md)** | Casos reales con imágenes de resultado |
+| **[📚 API Reference](guides/API_REFERENCE.md)** | Todos los endpoints documentados |
+| **[🏠 CasaOS](guides/CASAOS.md)** | Instalación con interfaz gráfica |
+| **[🐧 RPi4 Deployment](guides/DEPLOYMENT_RPI4.md)** | Deploy específico para Raspberry Pi 4 |
+| **[⚙️ GitHub Actions](guides/GITHUB_ACTIONS.md)** | Setup CI/CD para compilaciones automáticas |
 
 ---
 

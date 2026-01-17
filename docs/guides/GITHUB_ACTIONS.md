@@ -1,8 +1,4 @@
-# ⚠️ Archivo Movido
-
-Este archivo ha sido movido a la documentación centralizada.
-
-👉 **Ver en:** [docs/guides/GITHUB_ACTIONS.md](docs/guides/GITHUB_ACTIONS.md)
+# 🚀 GitHub Actions - Compilación Automática para ARM64
 
 ## ¿Por qué GitHub Actions?
 

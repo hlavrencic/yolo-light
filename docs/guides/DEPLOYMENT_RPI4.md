@@ -1,8 +1,4 @@
-# ⚠️ Archivo Movido
-
-Este archivo ha sido movido a la documentación centralizada.
-
-👉 **Ver en:** [docs/guides/DEPLOYMENT_RPI4.md](docs/guides/DEPLOYMENT_RPI4.md)
+# YOLO Light - Guía de Deployment en Raspberry Pi 4
 
 ## Estado Actual (Producción)
 
