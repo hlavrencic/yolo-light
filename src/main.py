@@ -1,11 +1,11 @@
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from ultralytics import YOLO
 import io
 import logging
 import time
 import os
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,7 +69,8 @@ async def root():
         "model": model_name,
         "model_classes": len(model.names) if model is not None else 80,
         "endpoints": {
-            "POST /detect": "Detectar objetos en imagen",
+            "POST /detect": "Detectar objetos en imagen → JSON",
+            "POST /detect-visual": "Detectar objetos en imagen → Imagen con bounding boxes",
             "GET /health": "Verificar estado de API",
             "GET /": "Información de API"
         }
@@ -165,6 +166,114 @@ async def detect_objects(file: UploadFile = File(...)):
             content={
                 "success": False,
                 "error": f"Error en detección: {str(e)}"
+            }
+        )
+
+@app.post("/detect-visual")
+async def detect_visual(file: UploadFile = File(...)):
+    """
+    Detectar objetos y retornar imagen con bounding boxes dibujados
+    
+    Args:
+        file: Archivo de imagen (JPG, PNG, etc)
+    
+    Returns:
+        Imagen PNG/JPG con bounding boxes y etiquetas
+    """
+    try:
+        # Validar tipo de archivo
+        if not file.content_type or not file.content_type.startswith("image/"):
+            logger.warning(f"Invalid content type: {file.content_type}")
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": "El archivo debe ser una imagen (JPG, PNG, etc)"
+                }
+            )
+        
+        # Leer imagen
+        logger.info(f"Procesando visualización: {file.filename}")
+        start_time = time.time()
+        
+        image_bytes = await file.read()
+        img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        img_copy = img.copy()  # Copia para dibujar
+        
+        logger.info(f"Imagen cargada: {img.size}")
+        
+        # Inferencia
+        inference_start = time.time()
+        results = model(img, conf=0.4, verbose=False)
+        inference_time = (time.time() - inference_start) * 1000
+        
+        # Dibujar en la imagen
+        draw = ImageDraw.Draw(img_copy)
+        detections = results[0]
+        
+        # Colores para diferentes clases (ciclar)
+        colors = [
+            (255, 0, 0),      # Red
+            (0, 255, 0),      # Green
+            (0, 0, 255),      # Blue
+            (255, 255, 0),    # Yellow
+            (255, 0, 255),    # Magenta
+            (0, 255, 255),    # Cyan
+            (255, 165, 0),    # Orange
+            (128, 0, 128),    # Purple
+        ]
+        
+        count = 0
+        if detections.boxes is not None:
+            for idx, box_data in enumerate(detections.boxes):
+                # Extraer coordenadas
+                xyxy = box_data.xyxy[0].tolist()
+                x1, y1, x2, y2 = xyxy
+                
+                # Confianza y clase
+                conf = float(box_data.conf[0])
+                cls_idx = int(box_data.cls[0])
+                class_name = detections.names.get(cls_idx, f"unknown_{cls_idx}")
+                
+                # Seleccionar color
+                color = colors[idx % len(colors)]
+                
+                # Dibujar rectángulo
+                draw.rectangle([x1, y1, x2, y2], outline=color, width=3)
+                
+                # Dibujar etiqueta
+                label = f"{class_name} {conf:.2f}"
+                text_bbox = draw.textbbox((x1, y1 - 20), label)
+                
+                # Fondo para el texto
+                draw.rectangle([text_bbox[0], text_bbox[1], text_bbox[2] + 5, text_bbox[3] + 5], 
+                             fill=color)
+                
+                # Texto
+                draw.text((x1, y1 - 20), label, fill=(255, 255, 255))
+                count += 1
+        
+        total_time = (time.time() - start_time) * 1000
+        logger.info(f"✅ Visualización completada: {count} objetos en {inference_time:.1f}ms")
+        
+        # Convertir imagen a bytes
+        img_bytes = io.BytesIO()
+        img_copy.save(img_bytes, format="PNG")
+        img_bytes.seek(0)
+        
+        return FileResponse(
+            io.BytesIO(img_bytes.getvalue()),
+            media_type="image/png",
+            headers={"Content-Disposition": f"attachment; filename=detected_{file.filename}"}
+        )
+    
+    except Exception as e:
+        logger.error(f"❌ Error en visualización: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": f"Error en visualización: {str(e)}"
             }
         )
 
