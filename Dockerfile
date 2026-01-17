@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsm6 libxext6 libxrender-dev libgl1 git && \
+    libsm6 libxext6 libxrender-dev libgl1 libglvnd0 git && \
     rm -rf /var/lib/apt/lists/*
 
 # Instalar deps mínimas
