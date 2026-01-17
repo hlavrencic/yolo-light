@@ -4,6 +4,7 @@ from ultralytics import YOLO
 import io
 import logging
 import time
+import os
 from PIL import Image
 
 logging.basicConfig(level=logging.INFO)
@@ -13,19 +14,20 @@ app = FastAPI(title="YOLO Light API", version="1.0.0")
 
 # Variable global para el modelo
 model = None
+model_name = os.getenv("MODEL_NAME", "yolov5n.pt")
 
 @app.on_event("startup")
 async def startup():
     """Cargar modelo YOLO en startup"""
-    global model
+    global model, model_name
     try:
         logger.info("🚀 Iniciando YOLO Light API...")
-        logger.info("📦 Cargando modelo YOLOv5n...")
+        logger.info(f"📦 Cargando modelo: {model_name}...")
         
-        # Cargar modelo YOLOv5n (se descarga automáticamente si no existe)
-        model = YOLO('yolov5n.pt')
+        # Cargar modelo YOLO (se descarga automáticamente si no existe)
+        model = YOLO(model_name)
         
-        logger.info("✅ Modelo YOLOv5n cargado correctamente")
+        logger.info(f"✅ Modelo {model_name} cargado correctamente")
         logger.info("📊 API lista para detección de objetos")
         
     except Exception as e:
@@ -41,10 +43,9 @@ async def health_check():
         
         return {
             "status": "healthy" if model_ready else "unhealthy",
-            "model": "YOLOv5n",
+            "model": model_name,
             "model_status": model_status,
             "model_ready": model_ready,
-            "size_mb": "7.5",
             "version": "1.0.0",
             "classes": len(model.names) if model_ready else 0
         }
@@ -52,7 +53,7 @@ async def health_check():
         logger.error(f"Error en health check: {e}")
         return {
             "status": "unhealthy",
-            "model": "YOLOv5n",
+            "model": model_name,
             "model_status": "error",
             "model_ready": False,
             "error": str(e)
@@ -65,9 +66,8 @@ async def root():
         "name": "YOLO Light API",
         "version": "1.0.0",
         "description": "Lightweight YOLO object detection API for RPi4",
-        "model": "YOLOv5n",
-        "model_size_mb": "7.5",
-        "model_classes": 80,
+        "model": model_name,
+        "model_classes": len(model.names) if model is not None else 80,
         "endpoints": {
             "POST /detect": "Detectar objetos en imagen",
             "GET /health": "Verificar estado de API",
@@ -153,7 +153,7 @@ async def detect_objects(file: UploadFile = File(...)):
             "count": len(objects),
             "inference_time_ms": round(inference_time, 1),
             "total_time_ms": round(total_time, 1),
-            "model": "YOLOv5n",
+            "model": model_name,
             "image_size": list(img.size),
             "objects": objects
         }
