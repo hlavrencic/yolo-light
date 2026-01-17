@@ -5,7 +5,9 @@ import io
 import logging
 import time
 import os
-from PIL import Image, ImageDraw, ImageFont
+import gc
+import psutil
+from PIL import Image, ImageDraw
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,6 +17,8 @@ app = FastAPI(title="YOLO Light API", version="1.0.0")
 # Variable global para el modelo
 model = None
 model_name = os.getenv("MODEL_NAME", "yolov5n.pt")
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE", "0.4"))
+MAX_IMAGE_SIZE = int(os.getenv("MAX_IMAGE_SIZE", "1920"))  # Redimensionar imágenes más grandes
 
 @app.on_event("startup")
 async def startup():
@@ -27,12 +31,32 @@ async def startup():
         # Cargar modelo YOLO (se descarga automáticamente si no existe)
         model = YOLO(model_name)
         
+        # Configurar modelo para inferencia óptima
+        model.fuse()  # Fusionar capas para mejor velocidad
+        
         logger.info(f"✅ Modelo {model_name} cargado correctamente")
         logger.info("📊 API lista para detección de objetos")
         
     except Exception as e:
         logger.error(f"❌ Error al cargar modelo: {e}")
         raise
+
+def optimize_image(img: Image.Image) -> Image.Image:
+    """Optimizar imagen para inferencia"""
+    # Redimensionar si es más grande que MAX_IMAGE_SIZE
+    if max(img.size) > MAX_IMAGE_SIZE:
+        img.thumbnail((MAX_IMAGE_SIZE, MAX_IMAGE_SIZE), Image.Resampling.LANCZOS)
+    return img
+
+def cleanup_memory():
+    """Liberar memoria explícitamente"""
+    gc.collect()
+    # En GPU, también limpiar caché
+    try:
+        import torch
+        torch.cuda.empty_cache()
+    except:
+        pass
 
 @app.get("/health")
 async def health_check():
@@ -79,7 +103,7 @@ async def root():
 @app.post("/detect")
 async def detect_objects(file: UploadFile = File(...)):
     """
-    Detectar objetos en imagen usando YOLOv5n
+    Detectar objetos en imagen usando YOLO
     
     Args:
         file: Archivo de imagen (JPG, PNG, etc)
@@ -106,11 +130,13 @@ async def detect_objects(file: UploadFile = File(...)):
         image_bytes = await file.read()
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
         
+        # Optimizar imagen
+        img = optimize_image(img)
         logger.info(f"Imagen cargada: {img.size}")
         
-        # Inferencia con YOLOv5n
+        # Inferencia con YOLO
         inference_start = time.time()
-        results = model(img, conf=0.4, verbose=False)
+        results = model(img, conf=CONFIDENCE_THRESHOLD, verbose=False)
         inference_time = (time.time() - inference_start) * 1000
         
         # Procesar resultados
@@ -149,7 +175,7 @@ async def detect_objects(file: UploadFile = File(...)):
         
         logger.info(f"✅ Detección completada: {len(objects)} objetos en {inference_time:.1f}ms")
         
-        return {
+        response = {
             "success": True,
             "count": len(objects),
             "inference_time_ms": round(inference_time, 1),
@@ -158,9 +184,16 @@ async def detect_objects(file: UploadFile = File(...)):
             "image_size": list(img.size),
             "objects": objects
         }
+        
+        # Limpiar memoria
+        del img, results, detections
+        cleanup_memory()
+        
+        return response
     
     except Exception as e:
         logger.error(f"❌ Error en detección: {e}", exc_info=True)
+        cleanup_memory()
         return JSONResponse(
             status_code=500,
             content={
@@ -178,7 +211,7 @@ async def detect_visual(file: UploadFile = File(...)):
         file: Archivo de imagen (JPG, PNG, etc)
     
     Returns:
-        Imagen PNG/JPG con bounding boxes y etiquetas
+        Imagen PNG con bounding boxes y etiquetas
     """
     try:
         # Validar tipo de archivo
@@ -198,13 +231,16 @@ async def detect_visual(file: UploadFile = File(...)):
         
         image_bytes = await file.read()
         img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-        img_copy = img.copy()  # Copia para dibujar
+        
+        # Optimizar imagen
+        img = optimize_image(img)
+        img_copy = img.copy()
         
         logger.info(f"Imagen cargada: {img.size}")
         
         # Inferencia
         inference_start = time.time()
-        results = model(img, conf=0.4, verbose=False)
+        results = model(img, conf=CONFIDENCE_THRESHOLD, verbose=False)
         inference_time = (time.time() - inference_start) * 1000
         
         # Dibujar en la imagen
@@ -258,17 +294,24 @@ async def detect_visual(file: UploadFile = File(...)):
         
         # Convertir imagen a bytes
         img_bytes = io.BytesIO()
-        img_copy.save(img_bytes, format="PNG")
+        img_copy.save(img_bytes, format="PNG", optimize=True)
         img_bytes.seek(0)
         
+        response_bytes = img_bytes.getvalue()
+        
+        # Limpiar memoria
+        del img, img_copy, results, detections, draw, img_bytes
+        cleanup_memory()
+        
         return StreamingResponse(
-            iter([img_bytes.getvalue()]),
+            iter([response_bytes]),
             media_type="image/png",
             headers={"Content-Disposition": f"attachment; filename=detected_{file.filename}"}
         )
     
     except Exception as e:
         logger.error(f"❌ Error en visualización: {e}", exc_info=True)
+        cleanup_memory()
         return JSONResponse(
             status_code=500,
             content={
