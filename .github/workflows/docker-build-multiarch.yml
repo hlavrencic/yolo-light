@@ -28,6 +28,10 @@ jobs:
       contents: read
       packages: write
 
+    environment:
+      name: Docker Hub
+      url: https://hub.docker.com/r/hn8888/yolo-light
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -74,3 +78,34 @@ jobs:
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+
+      - name: Generate Docker Hub Links
+        if: github.event_name != 'pull_request'
+        id: links
+        run: |
+          TAGS="${{ steps.meta.outputs.tags }}"
+          echo "## 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Image successfully built and pushed to Docker Hub!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Available Tags:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for tag in $TAGS; do
+            echo "- [\`$tag\`](https://hub.docker.com/r/$tag) 🔗" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Repository:" >> $GITHUB_STEP_SUMMARY
+          echo "- [hn8888/yolo-light on Docker Hub](https://hub.docker.com/r/hn8888/yolo-light) 🔗" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Command:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull hn8888/yolo-light:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Slack Notification (Optional)
+        if: github.event_name != 'pull_request' && always()
+        run: |
+          echo "✅ Docker image built successfully!"
+          echo "📦 Repository: hn8888/yolo-light"
+          echo "🏷️  Tags: ${{ steps.meta.outputs.tags }}"
+          echo "🔗 Docker Hub: https://hub.docker.com/r/hn8888/yolo-light"
