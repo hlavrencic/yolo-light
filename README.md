@@ -96,10 +96,9 @@ El proyecto compila automáticamente para **amd64, arm64, arm/v7** en cada push.
 | **[🚀 Guía de Instalación](docs/guides/INSTALLATION.md)** | Instalación en RPi4, PC, Docker Compose |
 | **[📸 Ejemplos de Uso](docs/EXAMPLES.md)** | Casos prácticos con imágenes de resultado |
 | **[📚 API Reference](docs/guides/API_REFERENCE.md)** | Documentación técnica completa de endpoints |
-| **[🏠 CasaOS Import](CASAOS_IMPORT.md)** | Instalación con interfaz gráfica |
-| **[🐳 Docker Hub](DOCKER_HUB_INSTRUCTIONS.md)** | Usar imagen desde Docker Hub |
-| **[⚙️ GitHub Actions](GITHUB_ACTIONS_SETUP.md)** | Setup CI/CD para compilar imágenes |
-| **[🚀 RPi4 Deployment](DEPLOYMENT_RPI4.md)** | Deploy en Raspberry Pi 4 |
+| **[🏠 CasaOS Import](docs/guides/CASAOS.md)** | Instalación con interfaz gráfica |
+| **[🐧 RPi4 Deployment](docs/guides/DEPLOYMENT_RPI4.md)** | Deploy en Raspberry Pi 4 |
+| **[⚙️ GitHub Actions](docs/guides/GITHUB_ACTIONS.md)** | Setup CI/CD para compilar imágenes |
 
 ## 🔍 API Endpoints
 
